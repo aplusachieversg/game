@@ -138,7 +138,6 @@ class MainActivity : Activity() {
 
         val videoRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(this) else MediaRecorder()
         recorder = videoRecorder
-        videoRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
         videoRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
         videoRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
         videoRecorder.setOutputFile(descriptor.fileDescriptor)
@@ -146,7 +145,6 @@ class MainActivity : Activity() {
         videoRecorder.setVideoFrameRate(30)
         videoRecorder.setVideoEncodingBitRate(5_000_000)
         videoRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-        videoRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
         videoRecorder.prepare()
 
         projection = projectionManager.getMediaProjection(resultCode, data)
