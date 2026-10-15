@@ -10,6 +10,7 @@ import android.media.MediaRecorder
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -31,6 +32,7 @@ class MainActivity : Activity() {
     private var virtualDisplay: VirtualDisplay? = null
     private var recorder: MediaRecorder? = null
     private var outputUri: Uri? = null
+    private var outputDescriptor: ParcelFileDescriptor? = null
     private var isRecording = false
     private var screenWidth = 720
     private var screenHeight = 1280
@@ -133,14 +135,14 @@ class MainActivity : Activity() {
         }
         outputUri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
             ?: throw IllegalStateException("无法创建视频文件")
-        val descriptor = contentResolver.openFileDescriptor(outputUri!!, "w")
+        outputDescriptor = contentResolver.openFileDescriptor(outputUri!!, "w")
             ?: throw IllegalStateException("无法打开视频文件")
 
         val videoRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(this) else MediaRecorder()
         recorder = videoRecorder
         videoRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
         videoRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-        videoRecorder.setOutputFile(descriptor.fileDescriptor)
+        videoRecorder.setOutputFile(outputDescriptor!!.fileDescriptor)
         videoRecorder.setVideoSize(screenWidth - screenWidth % 2, screenHeight - screenHeight % 2)
         videoRecorder.setVideoFrameRate(30)
         videoRecorder.setVideoEncodingBitRate(5_000_000)
@@ -164,7 +166,6 @@ class MainActivity : Activity() {
         startButton.isEnabled = false
         stopButton.isEnabled = true
         status.text = "正在录制全屏画面…"
-        descriptor.close()
     }
 
     private fun stopRecording() {
@@ -180,6 +181,8 @@ class MainActivity : Activity() {
         recorder?.reset()
         recorder?.release()
         recorder = null
+        try { outputDescriptor?.close() } catch (_: Exception) {}
+        outputDescriptor = null
         projection?.stop()
         projection = null
         outputUri?.let { uri ->
@@ -198,6 +201,8 @@ class MainActivity : Activity() {
         virtualDisplay = null
         try { recorder?.reset(); recorder?.release() } catch (_: Exception) {}
         recorder = null
+        try { outputDescriptor?.close() } catch (_: Exception) {}
+        outputDescriptor = null
         try { projection?.stop() } catch (_: Exception) {}
         projection = null
         isRecording = false
